@@ -37,7 +37,7 @@ module DocxReport
           if p_pr.nil?
             node.first_element_child.before('<w:pPr><w:bidi/></w:pPr>')
           else
-            pPr.first_element_child.before('<w:bidi/>')
+            p_pr.first_element_child.before('<w:bidi/>')
           end
         end
       end
