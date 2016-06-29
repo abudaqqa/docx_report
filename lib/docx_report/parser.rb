@@ -26,6 +26,23 @@ module DocxReport
       parent_node.xpath(".//*[contains(text(), '#{name}')]")
     end
 
+    def apply_text_direction(name, parent_node, text_direction)
+      parent_node.xpath("//w:p[.//*[contains(text(), '#{name}')]]")
+                 .each do |node|
+        bidi = node.xpath('.//w:bidi').first
+        if text_direction == :ltr
+          bidi.remove if bidi
+        elsif bidi.nil?
+          p_pr = node.xpath('.//w:pPr').first
+          if p_pr.nil?
+            node.first_element_child.before('<w:pPr><w:bidi/></w:pPr>')
+          else
+            pPr.first_element_child.before('<w:bidi/>')
+          end
+        end
+      end
+    end
+
     def find_hyperlink_nodes(name, parent_node, file)
       links = file.rels_xml.xpath "//*[@Target='#{name}']"
       parent_node.xpath(".//w:hyperlink[@r:id='#{find_by_id(links)}']")
@@ -42,8 +59,11 @@ module DocxReport
 
     def replace_node_fields(fields, parent_node)
       fields.select { |f| f.type == :text }.each do |field|
-        find_text_nodes(field.name, parent_node).map do |node|
-          node.content = node.content.gsub field.name, field.value
+        if field.text_direction != :none
+          apply_text_direction(field.name, parent_node, field.text_direction)
+        end
+        find_text_nodes(field.name, parent_node).each do |node|
+          node.content = node.content.gsub field.name, field.value.to_s
         end
       end
     end
